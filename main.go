@@ -151,11 +151,16 @@ func scale(w http.ResponseWriter, r *http.Request) {
 		}
 
 		var targetInstanceCount int
+		maxCount, err := strconv.ParseFloat(os.Getenv("MAX_INSTANCE_COUNT"), 64)
+		if err != nil {
+			http.Error(w, "error: invalid MAX_INSTANCE_COUNT", http.StatusInternalServerError)
+		}
 
 		if currentLength > 0 {
 			// K8s HPA: https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/#algorithm-details
-			targetInstanceCount = int(math.Min(float64(MAX_INSTANCE_COUNT),
+			targetInstanceCount = int(math.Min(maxCount,
 				float64(math.Ceil(float64(currentInstanceCount)*float64(currentLength)/float64(redisConfig.ListLength)))))
+
 			if targetInstanceCount == 0 {
 				targetInstanceCount = 1
 			}
