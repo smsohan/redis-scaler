@@ -170,7 +170,6 @@ func scale(w http.ResponseWriter, r *http.Request) {
 }
 
 func getCurrentInstanceCount() (int, error) {
-	//return 0, nil
 	instanceCount, err := client.Get(INSTANCE_COUNT_CACHE_KEY).Result()
 
 	if err != nil {
@@ -182,6 +181,7 @@ func getCurrentInstanceCount() (int, error) {
 
 func setInstanceCount(count int) error {
 	_, err := client.Set(INSTANCE_COUNT_CACHE_KEY, count, time.Duration(0)).Result()
+	//TODO: Call Cloud Run API to adjust the instance count
 	return err
 }
 
