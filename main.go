@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/go-redis/redis"
+	"github.com/smsohan/redis-autoscale/pkg/cloudrun"
 	"github.com/smsohan/redis-autoscale/pkg/listlength"
 )
 
@@ -175,13 +176,7 @@ func scale(w http.ResponseWriter, r *http.Request) {
 }
 
 func getCurrentInstanceCount() (int, error) {
-	instanceCount, err := client.Get(INSTANCE_COUNT_CACHE_KEY).Result()
-
-	if err != nil {
-		return 0, err
-	}
-
-	return strconv.Atoi(instanceCount)
+	return cloudrun.GetCurrentInstanceCount(os.Getenv("CONSUMER_PROJECT_ID"), os.Getenv("CONSUMER_REGION"), os.Getenv("CONSUMER_SERVICE_NAME"))
 }
 
 func setInstanceCount(count int) error {
