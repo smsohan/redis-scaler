@@ -156,21 +156,17 @@ func scale(w http.ResponseWriter, r *http.Request) {
 			fmt.Printf("Failed to get current instance count: %q\n", err)
 		}
 
-		var targetInstanceCount int
-		maxCount, err := strconv.ParseFloat(os.Getenv("MAX_INSTANCE_COUNT"), 64)
+		maxCount, err := strconv.Atoi(os.Getenv("MAX_INSTANCE_COUNT"))
 		if err != nil {
 			http.Error(w, "error: invalid MAX_INSTANCE_COUNT", http.StatusInternalServerError)
 		}
 
-		if currentLength > 0 {
-			// K8s HPA: https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/#algorithm-details
-			targetInstanceCount = int(math.Min(maxCount,
-				float64(math.Ceil(float64(currentInstanceCount)*float64(currentLength)/float64(redisConfig.ListLength)))))
-
-			if targetInstanceCount == 0 {
-				targetInstanceCount = 1
-			}
-		}
+		targetInstanceCount := computeTargetInstanceCount(
+			currentInstanceCount,
+			maxCount,
+			currentLength,
+			redisConfig.ListLength,
+		)
 
 		if targetInstanceCount != currentInstanceCount {
 			setInstanceCount(targetInstanceCount)
@@ -180,6 +176,21 @@ func scale(w http.ResponseWriter, r *http.Request) {
 	} else {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 	}
+}
+
+func computeTargetInstanceCount(currentInstanceCount, maxInstanceCount int, currentListlength, targetListLength int64) int {
+	targetInstanceCount := 0
+	if currentListlength > 0 {
+		// K8s HPA: https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/#algorithm-details
+		targetInstanceCount = int(math.Min(float64(maxInstanceCount),
+			float64(math.Ceil(float64(currentInstanceCount)*float64(currentListlength)/float64(targetListLength)))))
+
+		if targetInstanceCount == 0 {
+			targetInstanceCount = 1
+		}
+	}
+
+	return targetInstanceCount
 }
 
 func getCurrentInstanceCount() (int, error) {
