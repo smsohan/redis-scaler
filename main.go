@@ -130,14 +130,6 @@ func consume() {
 		} else {
 			fmt.Printf("Consumed value:%q", popped)
 		}
-
-		count, err := getCurrentInstanceCount()
-		if count <= 0 {
-			count = 1
-		}
-		if err != nil {
-			log.Fatalf("Error getting instance count: %q", err)
-		}
 		time.Sleep(redisConfig.ConsumptionTimeMils)
 	}
 }
@@ -151,7 +143,7 @@ func scale(w http.ResponseWriter, r *http.Request) {
 
 		fmt.Printf("currentLenght: %d, targetLength: %d\n", currentLength, redisConfig.ListLength)
 
-		currentInstanceCount, err := getCurrentInstanceCount()
+		currentInstanceCount, err := cloudrun.GetCurrentInstanceCount(consumerServiceFQN)
 		if err != nil {
 			fmt.Printf("Failed to get current instance count: %q\n", err)
 		}
@@ -169,7 +161,7 @@ func scale(w http.ResponseWriter, r *http.Request) {
 		)
 
 		if targetInstanceCount != currentInstanceCount {
-			setInstanceCount(targetInstanceCount)
+			cloudrun.SetMinInstanceCount(consumerServiceFQN, targetInstanceCount)
 		}
 		fmt.Fprintf(w, "Listlength: %d, Instance count: %d -> %d", currentLength, currentInstanceCount, targetInstanceCount)
 
@@ -191,14 +183,6 @@ func computeTargetInstanceCount(currentInstanceCount, maxInstanceCount int, curr
 	}
 
 	return targetInstanceCount
-}
-
-func getCurrentInstanceCount() (int, error) {
-	return cloudrun.GetCurrentInstanceCount(consumerServiceFQN)
-}
-
-func setInstanceCount(count int) error {
-	return cloudrun.SetMinInstanceCount(consumerServiceFQN, count)
 }
 
 func home(w http.ResponseWriter, r *http.Request) {
