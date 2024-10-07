@@ -22,6 +22,8 @@ const DEFAULT_LIST_ITEM = "dummy"
 const INSTANCE_COUNT_CACHE_KEY = "INSTANCE_COUNT"
 const MAX_INSTANCE_COUNT = 100
 
+var consumerServiceFQN string
+
 func main() {
 	redisConfig, client = connectToRedis()
 
@@ -33,6 +35,9 @@ func main() {
 		http.HandleFunc("/length", length)
 		http.HandleFunc("/scale", scale)
 		http.HandleFunc("/", home)
+
+		consumerServiceFQN = fmt.Sprintf("projects/%s/locations/%s/services/%s",
+			os.Getenv("CONSUMER_PROJECT_ID"), os.Getenv("CONSUMER_REGION"), os.Getenv("CONSUMER_SERVICE_NAME"))
 
 		fmt.Println("Server listening on :8080")
 		fmt.Println("== USAGE ==")
@@ -167,7 +172,9 @@ func scale(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		setInstanceCount(targetInstanceCount)
+		if targetInstanceCount != currentInstanceCount {
+			setInstanceCount(targetInstanceCount)
+		}
 		fmt.Fprintf(w, "Listlength: %d, Instance count: %d -> %d", currentLength, currentInstanceCount, targetInstanceCount)
 
 	} else {
@@ -176,13 +183,11 @@ func scale(w http.ResponseWriter, r *http.Request) {
 }
 
 func getCurrentInstanceCount() (int, error) {
-	return cloudrun.GetCurrentInstanceCount(os.Getenv("CONSUMER_PROJECT_ID"), os.Getenv("CONSUMER_REGION"), os.Getenv("CONSUMER_SERVICE_NAME"))
+	return cloudrun.GetCurrentInstanceCount(consumerServiceFQN)
 }
 
 func setInstanceCount(count int) error {
-	_, err := client.Set(INSTANCE_COUNT_CACHE_KEY, count, time.Duration(0)).Result()
-	//TODO: Call Cloud Run API to adjust the instance count
-	return err
+	return cloudrun.SetMinInstanceCount(consumerServiceFQN, count)
 }
 
 func home(w http.ResponseWriter, r *http.Request) {
