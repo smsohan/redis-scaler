@@ -21,4 +21,13 @@ $ REDIS_HOST=localhost REDIS_PORT=6379 REDIS_LIST_NAME=mylist REDIS_LIST_LENGTH=
 $ PORT=3000 REDIS_HOST=localhost REDIS_PORT=6379 REDIS_LIST_NAME=mylist MODE=CONSUMER REDIS_CONSUMPTION_TIME_MILS=100 go run main.go
 ```
 
+## Scaling Algorithm
 
+The scaler uses a naive scaling algorithm, borrowed from [Kubernetes HPA](https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/#algorithm-details) that works as follows:
+
+$$
+targetInstanceCount = \begin{cases}
+  \text{1} & if currentListLength > 0 \text { and } currentInstanceCount == 0 \\
+  ceil (currentInstanceCount * \frac{currentListLength}{targetListLength} ) & \text otherwise
+\end{cases}
+$$

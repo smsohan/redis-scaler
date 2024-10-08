@@ -171,15 +171,12 @@ func scale(w http.ResponseWriter, r *http.Request) {
 }
 
 func computeTargetInstanceCount(currentInstanceCount, maxInstanceCount int, currentListlength, targetListLength int64) int {
-	targetInstanceCount := 0
-	if currentListlength > 0 {
-		// K8s HPA: https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/#algorithm-details
-		targetInstanceCount = int(math.Min(float64(maxInstanceCount),
-			float64(math.Ceil(float64(currentInstanceCount)*float64(currentListlength)/float64(targetListLength)))))
+	// K8s HPA: https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/#algorithm-details
+	targetInstanceCount := int(math.Min(float64(maxInstanceCount),
+		float64(math.Ceil(float64(currentInstanceCount)*float64(currentListlength)/float64(targetListLength)))))
 
-		if targetInstanceCount == 0 {
-			targetInstanceCount = 1
-		}
+	if currentListlength > 0 && targetInstanceCount == 0 {
+		targetInstanceCount = 1
 	}
 
 	return targetInstanceCount
