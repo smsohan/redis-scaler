@@ -128,7 +128,7 @@ func consume() {
 		if err != nil {
 			fmt.Print(".")
 		} else {
-			fmt.Printf("Consumed value:%q", popped)
+			fmt.Printf("Consumed value:%q\n", popped)
 		}
 		time.Sleep(redisConfig.ConsumptionTimeMils)
 	}
@@ -163,7 +163,7 @@ func scale(w http.ResponseWriter, r *http.Request) {
 		if targetInstanceCount != currentInstanceCount {
 			cloudrun.SetMinInstanceCount(consumerServiceFQN, targetInstanceCount)
 		}
-		fmt.Fprintf(w, "Listlength: %d, Instance count: %d -> %d", currentLength, currentInstanceCount, targetInstanceCount)
+		fmt.Fprintf(w, "Listlength: %d, Instance count: %d -> %d\n", currentLength, currentInstanceCount, targetInstanceCount)
 
 	} else {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
@@ -172,14 +172,18 @@ func scale(w http.ResponseWriter, r *http.Request) {
 
 func computeTargetInstanceCount(currentInstanceCount, maxInstanceCount int, currentListlength, targetListLength int64) int {
 	// K8s HPA: https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/#algorithm-details
-	targetInstanceCount := int(math.Min(float64(maxInstanceCount),
-		float64(math.Ceil(float64(currentInstanceCount)*float64(currentListlength)/float64(targetListLength)))))
+	usageRatio := float64(currentListlength) / float64(targetListLength)
 
-	if currentListlength > 0 && targetInstanceCount == 0 {
-		targetInstanceCount = 1
+	// scale up or down
+	if currentInstanceCount != 0 {
+		return int(math.Min(
+			float64(maxInstanceCount),
+			math.Ceil(float64(currentInstanceCount)*usageRatio),
+		))
 	}
 
-	return targetInstanceCount
+	// possibly scale up to n
+	return int(math.Ceil(usageRatio))
 }
 
 func home(w http.ResponseWriter, r *http.Request) {
