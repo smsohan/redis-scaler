@@ -33,7 +33,7 @@ The scaler uses a naive scaling algorithm, borrowed from [Kubernetes HPA](https:
 
 $$
 targetInstanceCount = \begin{cases}
-  \text{1} & if currentListLength > 0 \text { and } currentInstanceCount == 0 \\
+  ceil (\frac{currentListLength}{targetListLength} ) & if currentInstanceCount == 0 \\
   ceil (currentInstanceCount * \frac{currentListLength}{targetListLength} ) & \text otherwise
 \end{cases}
 $$
