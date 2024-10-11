@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-	"time"
 
 	"github.com/go-redis/redis"
 	"github.com/smsohan/redis-autoscale/pkg/cloudrun"
@@ -17,95 +16,34 @@ import (
 var client *redis.Client
 var redisConfig *listlength.Config
 
-const DEFAULT_COUNT = 10
-const DEFAULT_LIST_ITEM = "dummy"
-const INSTANCE_COUNT_CACHE_KEY = "INSTANCE_COUNT"
 const MAX_INSTANCE_COUNT = 100
 
 var consumerServiceFQN string
 
 func main() {
-	redisConfig, client = connectToRedis()
-
-	mode := os.Getenv("MODE")
-	if mode == "CONSUMER" {
-		go consume()
-	} else {
-		http.HandleFunc("/publish", publish)
-		http.HandleFunc("/length", length)
-		http.HandleFunc("/scale", scale)
-		http.HandleFunc("/", home)
-
-		consumerServiceFQN = fmt.Sprintf("projects/%s/locations/%s/services/%s",
-			os.Getenv("CONSUMER_PROJECT_ID"), os.Getenv("CONSUMER_REGION"), os.Getenv("CONSUMER_SERVICE_NAME"))
-
-		fmt.Println("Server listening on :8080")
-		fmt.Println("== USAGE ==")
-		fmt.Println("POST /publish?count=10 # default 10")
-		fmt.Println("GET /length")
-		fmt.Println("POST /scale")
-		fmt.Println("== END USAGE ==")
+	var err error
+	redisConfig, client, err = listlength.Connect()
+	if err != nil {
+		log.Fatalf("Failed to connect to Redis: %q", err)
 	}
+
+	http.HandleFunc("/scale", scale)
+	http.HandleFunc("/", length)
+
+	consumerServiceFQN = fmt.Sprintf("projects/%s/locations/%s/services/%s",
+		os.Getenv("CONSUMER_PROJECT_ID"), os.Getenv("CONSUMER_REGION"), os.Getenv("CONSUMER_SERVICE_NAME"))
+
+	fmt.Println("Server listening on :8080")
+	fmt.Println("== USAGE ==")
+	fmt.Println("GET /length")
+	fmt.Println("POST /scale")
+	fmt.Println("== END USAGE ==")
 
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
 	log.Fatal(http.ListenAndServe(":"+port, nil))
-}
-
-func connectToRedis() (*listlength.Config, *redis.Client) {
-	redisConfig, err := listlength.ReadListConfigFromEnv()
-	if err != nil {
-		log.Fatalf("Error in reading config: %q\n", err)
-	}
-	fmt.Printf("Connecting to: %s\n", redisConfig.Address)
-	client := redis.NewClient(&redis.Options{
-		Addr: redisConfig.Address,
-		DB:   0, // Use default DB
-	})
-
-	pong := client.Ping()
-	if pong.Err() != nil {
-		fmt.Printf("Failed to connect: %q", pong.Err())
-	}
-	fmt.Println("Redis connected")
-	return redisConfig, client
-}
-
-func publish(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodPost {
-		query := r.URL.Query()
-
-		item := query.Get("item")
-		if item == "" {
-			item = DEFAULT_LIST_ITEM
-		}
-
-		countStr := query.Get("count")
-		count := DEFAULT_COUNT
-		if countStr != "" {
-			var err error
-			count, err = strconv.Atoi(countStr)
-			if err != nil {
-				http.Error(w, "Invalid count parameter", http.StatusBadRequest)
-				return
-			}
-		}
-
-		for i := 0; i < count; i++ {
-			err := client.RPush(redisConfig.ListName, item).Err()
-			if err != nil {
-				http.Error(w, "Failed to add item to list", http.StatusInternalServerError)
-				return
-			}
-		}
-
-		fmt.Fprintf(w, "%d items added to list: %s\n", count, item)
-		log.Printf("%d items added to list: %s\n", count, item)
-	} else {
-		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
-	}
 }
 
 func length(w http.ResponseWriter, r *http.Request) {
@@ -118,19 +56,6 @@ func length(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "List: %s, Length: %d, targetLength: %d\n", redisConfig.ListName, len.Val(), redisConfig.ListLength)
 	} else {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
-	}
-}
-
-func consume() {
-	fmt.Println("Starting consumer")
-	for {
-		popped, err := client.LPop(redisConfig.ListName).Result()
-		if err != nil {
-			fmt.Print(".")
-		} else {
-			fmt.Printf("Consumed value:%q\n", popped)
-		}
-		time.Sleep(redisConfig.ConsumptionTimeMils)
 	}
 }
 
@@ -184,8 +109,4 @@ func computeTargetInstanceCount(currentInstanceCount, maxInstanceCount int, curr
 
 	// possibly scale up to n
 	return int(math.Ceil(usageRatio))
-}
-
-func home(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "hello")
 }

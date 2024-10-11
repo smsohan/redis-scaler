@@ -13,12 +13,14 @@ GET /length # show the current length of the queue
 It needs to run with a number of env variables as follows:
 
 ```bash
+# Producer
+$ REDIS_HOST=localhost REDIS_PORT=6379 REDIS_LIST_NAME=mylist go run ./cmd/producer
 
-# Main web app
-$ REDIS_HOST=localhost REDIS_PORT=6379 REDIS_LIST_NAME=mylist REDIS_LIST_LENGTH=100 CONSUMER_PROJECT_ID=sohansm-project CONSUMER_REGION=us-central1 CONSUMER_SERVICE_NAME=redis-consumer MAX_INSTANCE_COUNT=50 go run main.go
+# Scaler
+$ PORT=8081 REDIS_HOST=localhost REDIS_PORT=6379 REDIS_LIST_NAME=mylist REDIS_LIST_LENGTH=100 CONSUMER_PROJECT_ID=sohansm-project CONSUMER_REGION=us-central1 CONSUMER_SERVICE_NAME=redis-consumer MAX_INSTANCE_COUNT=50 go run ./cmd/scaler
 
 # Consumer
-$ PORT=3000 REDIS_HOST=localhost REDIS_PORT=6379 REDIS_LIST_NAME=mylist MODE=CONSUMER REDIS_CONSUMPTION_TIME_MILS=100 go run main.go
+$ PORT=8082 REDIS_HOST=localhost REDIS_PORT=6379 REDIS_LIST_NAME=mylist REDIS_CONSUMPTION_TIME_MILS=100 go run ./cmd/consumer
 ```
 
 It's a single app, but serves 3 purposes:
