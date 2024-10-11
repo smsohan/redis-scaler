@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/go-redis/redis"
@@ -18,8 +19,7 @@ const DEFAULT_COUNT = 10
 const DEFAULT_LIST_ITEM = "dummy"
 const INSTANCE_COUNT_CACHE_KEY = "INSTANCE_COUNT"
 const MAX_INSTANCE_COUNT = 100
-
-var consumerServiceFQN string
+const DEFUALT_CONSUMPTION_MILS = time.Duration(100) * time.Microsecond
 
 func main() {
 	var err error
@@ -40,6 +40,18 @@ func main() {
 
 func consume() {
 	fmt.Println("Starting consumer")
+	consumptionTime := DEFUALT_CONSUMPTION_MILS
+
+	milsEnv := os.Getenv("REDIS_CONSUMPTION_TIME_MILS")
+	if milsEnv != "" {
+		mils, err := strconv.Atoi(milsEnv)
+		if err != nil {
+			log.Fatalf("Failed to start the consumer, invalid REDIS_CONSUMPTION_TIME_MILS: %q", err)
+			return
+		}
+		consumptionTime = time.Duration(mils) * time.Microsecond
+	}
+
 	for {
 		popped, err := client.LPop(redisConfig.ListName).Result()
 		if err != nil {
@@ -47,6 +59,6 @@ func consume() {
 		} else {
 			fmt.Printf("Consumed value:%q\n", popped)
 		}
-		time.Sleep(redisConfig.ConsumptionTimeMils)
+		time.Sleep(consumptionTime)
 	}
 }

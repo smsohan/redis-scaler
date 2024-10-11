@@ -15,7 +15,7 @@ func Connect() (*Config, *redis.Client, error) {
 	fmt.Printf("Connecting to: %s\n", redisConfig.Address)
 	client := redis.NewClient(&redis.Options{
 		Addr: redisConfig.Address,
-		DB:   0, // Use default DB
+		DB:   redisConfig.DatabaseIndex,
 	})
 
 	pong := client.Ping()

@@ -4,20 +4,16 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-	"time"
 )
 
 type Config struct {
-	Address             string
-	Password            string
-	ListName            string
-	ListLength          int64
-	EnableTLS           string
-	DatabaseIndex       string
-	ConsumptionTimeMils time.Duration
+	Address       string
+	Password      string
+	ListName      string
+	ListLength    int64
+	DatabaseIndex int
 }
 
-const DEFUALT_CONSUMPTION_MILS = 100
 const DEFUALT_LIST_LENGTH = 10
 
 func ReadListConfigFromEnv() (*Config, error) {
@@ -27,19 +23,17 @@ func ReadListConfigFromEnv() (*Config, error) {
 		return nil, err
 	}
 
-	mils, err := readIntFromEnv("REDIS_CONSUMPTION_TIME_MILS", DEFUALT_CONSUMPTION_MILS)
+	index, err := readIntFromEnv("REDIS_DATABASE_INDEX", DEFUALT_LIST_LENGTH)
 	if err != nil {
 		return nil, err
 	}
 
 	var config = &Config{
-		Address:             fmt.Sprintf("%s:%s", os.Getenv("REDIS_HOST"), os.Getenv("REDIS_PORT")),
-		Password:            os.Getenv("REDIS_PASSWORD"),
-		ListName:            os.Getenv("REDIS_LIST_NAME"),
-		ListLength:          length,
-		EnableTLS:           os.Getenv("REDIS_ENABLE_TLS"),
-		DatabaseIndex:       os.Getenv("REDIS_DATABASE_INDEX"),
-		ConsumptionTimeMils: time.Duration(mils) * time.Millisecond,
+		Address:       fmt.Sprintf("%s:%s", os.Getenv("REDIS_HOST"), os.Getenv("REDIS_PORT")),
+		Password:      os.Getenv("REDIS_PASSWORD"),
+		ListName:      os.Getenv("REDIS_LIST_NAME"),
+		ListLength:    length,
+		DatabaseIndex: int(index),
 	}
 
 	return config, nil

@@ -1,4 +1,5 @@
 REPO=us-central1-docker.pkg.dev/sohansm-project/cloud-run-source-deploy
+
 PRODUCER_IMAGE=$REPO/producer
 CGO_ENABLED=0 go build -o ./build ./cmd/producer
 docker build -t $PRODUCER_IMAGE --build-arg BINARY=producer .
