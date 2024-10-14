@@ -14,16 +14,16 @@ type Config struct {
 	DatabaseIndex int
 }
 
-const DEFUALT_LIST_LENGTH = 10
+const defaultListLength = 10
 
 func ReadListConfigFromEnv() (*Config, error) {
 
-	length, err := readIntFromEnv("REDIS_LIST_LENGTH", DEFUALT_LIST_LENGTH)
+	length, err := readIntFromEnv("REDIS_LIST_LENGTH", defaultListLength)
 	if err != nil {
 		return nil, err
 	}
 
-	index, err := readIntFromEnv("REDIS_DATABASE_INDEX", DEFUALT_LIST_LENGTH)
+	index, err := readIntFromEnv("REDIS_DATABASE_INDEX", 0)
 	if err != nil {
 		return nil, err
 	}

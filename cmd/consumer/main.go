@@ -15,11 +15,7 @@ import (
 var client *redis.Client
 var redisConfig *listlength.Config
 
-const DEFAULT_COUNT = 10
-const DEFAULT_LIST_ITEM = "dummy"
-const INSTANCE_COUNT_CACHE_KEY = "INSTANCE_COUNT"
-const MAX_INSTANCE_COUNT = 100
-const DEFUALT_CONSUMPTION_MILS = time.Duration(100) * time.Microsecond
+const defaultConsumtionTimeMils = time.Duration(100) * time.Microsecond
 
 func main() {
 	var err error
@@ -40,7 +36,7 @@ func main() {
 
 func consume() {
 	fmt.Println("Starting consumer")
-	consumptionTime := DEFUALT_CONSUMPTION_MILS
+	consumptionTime := defaultConsumtionTimeMils
 
 	milsEnv := os.Getenv("REDIS_CONSUMPTION_TIME_MILS")
 	if milsEnv != "" {

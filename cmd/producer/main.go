@@ -14,8 +14,8 @@ import (
 var client *redis.Client
 var redisConfig *listlength.Config
 
-const DEFAULT_COUNT = 10
-const DEFAULT_LIST_ITEM = "dummy"
+const defaultCount = 10
+const defaultListItem = "dummy"
 
 func main() {
 	var err error
@@ -44,11 +44,11 @@ func publish(w http.ResponseWriter, r *http.Request) {
 
 		item := query.Get("item")
 		if item == "" {
-			item = DEFAULT_LIST_ITEM
+			item = defaultListItem
 		}
 
 		countStr := query.Get("count")
-		count := DEFAULT_COUNT
+		count := defaultCount
 		if countStr != "" {
 			var err error
 			count, err = strconv.Atoi(countStr)

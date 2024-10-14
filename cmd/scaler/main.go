@@ -15,9 +15,6 @@ import (
 
 var client *redis.Client
 var redisConfig *listlength.Config
-
-const MAX_INSTANCE_COUNT = 100
-
 var consumerServiceFQN string
 
 func main() {
@@ -73,9 +70,9 @@ func scale(w http.ResponseWriter, r *http.Request) {
 			fmt.Printf("Failed to get current instance count: %q\n", err)
 		}
 
-		maxCount, err := strconv.Atoi(os.Getenv("MAX_INSTANCE_COUNT"))
+		maxCount, err := strconv.Atoi(os.Getenv("maxInstanceCount"))
 		if err != nil {
-			http.Error(w, "error: invalid MAX_INSTANCE_COUNT", http.StatusInternalServerError)
+			http.Error(w, "error: invalid maxInstanceCount", http.StatusInternalServerError)
 		}
 
 		targetInstanceCount := computeTargetInstanceCount(
